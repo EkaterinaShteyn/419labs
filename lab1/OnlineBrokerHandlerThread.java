@@ -4,6 +4,8 @@ import java.util.Scanner;
 
 public class OnlineBrokerHandlerThread extends Thread {
 	private Socket socket = null;
+	File nasdaq = new File("nasdaq");
+	private ObjectOutputStream toClient;
 
 	public OnlineBrokerHandlerThread(Socket socket) {
 		super("OnlineBrokerHandlerThread");
@@ -21,7 +23,7 @@ public class OnlineBrokerHandlerThread extends Thread {
 			BrokerPacket packetFromClient;
 			
 			/* stream to write back to client */
-			ObjectOutputStream toClient = new ObjectOutputStream(socket.getOutputStream());
+			toClient = new ObjectOutputStream(socket.getOutputStream());
 			
 
 			while (( packetFromClient = (BrokerPacket) fromClient.readObject()) != null) {
@@ -33,28 +35,10 @@ public class OnlineBrokerHandlerThread extends Thread {
 				/* just echo in this example */
 				if(packetFromClient.type == BrokerPacket.BROKER_REQUEST) {
 					// add file parsing here
-					packetToClient.quote = 0L; //packetFromClient.quote;
+					packetToClient.quote = getQuote(packetFromClient.symbol); //packetFromClient.quote;
 					
-					File nasdaq = new File("nasdaq");
+					
 
-					try {
-
-        				Scanner sc = new Scanner(nasdaq);
-					String tmp;
-					Long num;
-
-        					while (sc.hasNext()) {
-            						tmp = sc.next();
-							num = sc.nextLong();
-							if (tmp.equals(packetFromClient.symbol)) {
-								packetToClient.quote=num;
-							}
-        					}
-        					sc.close();
-    					} 
-    					catch (FileNotFoundException e) {
-        					e.printStackTrace();
-    					}
 
 					// end file parsing
 					//System.out.println("From Client: " + packetFromClient.quote);
@@ -65,6 +49,38 @@ public class OnlineBrokerHandlerThread extends Thread {
 					/* wait for next packet */
 					continue;
 				}
+				
+				switch (packetFromClient.type){
+				
+				case BrokerPacket.EXCHANGE_ADD:
+					
+					if (getQuote(packetFromClient.symbol) == null) {
+						// symbol not yet in file
+						addSymbol(packetFromClient.symbol);
+						sendMessageToClient(packetToClient, BrokerPacket.EXCHANGE_REPLY, packetFromClient.symbol, 0L);
+						
+					} else {
+						// symbol in file --  needs error handling
+					}
+				
+					continue;
+					
+				case BrokerPacket.EXCHANGE_REMOVE:
+					
+					if (getQuote(packetFromClient.symbol) != null) {
+						// symbol not yet in file
+						removeSymbol(packetFromClient.symbol);
+						sendMessageToClient(packetToClient, BrokerPacket.EXCHANGE_REPLY, packetFromClient.symbol, 0L);
+						
+					} else {
+						// symbol not in file --  needs error handling
+					}
+				
+					continue;
+				
+				}
+				
+				
 				
 				/* Sending an BROKER_NULL || BROKER_BYE means quit */
 				if (packetFromClient.type == BrokerPacket.BROKER_NULL || packetFromClient.type == BrokerPacket.BROKER_BYE) {
@@ -93,5 +109,55 @@ public class OnlineBrokerHandlerThread extends Thread {
 			if(!gotByePacket)
 				e.printStackTrace();
 		}
+	}
+	
+	private void removeSymbol(String symbol) {
+		// TO BE IMPLEMENTED
+		
+	}
+
+	private void sendMessageToClient(BrokerPacket packetToClient, int exchangeReply, String symbol, long l) throws IOException {
+		packetToClient.type = exchangeReply;
+		packetToClient.symbol = symbol;
+		packetToClient.quote = l;
+		toClient.writeObject(packetToClient);
+		
+	}
+
+	private void addSymbol(String symbol) {
+		try
+		{
+		    FileWriter fw = new FileWriter("nasdaq",true); //the true will append the new data
+		    fw.write(symbol.concat(" 0\n"));//appends the string to the file
+		    fw.close();
+		}
+		catch(IOException ioe)
+		{
+		    System.err.println("IOException: " + ioe.getMessage());
+		}
+	}
+
+	private Long getQuote(String symbol) {
+		/* helper method to get the quote given a symbol from file*/
+		try {
+
+			Scanner sc = new Scanner(nasdaq);
+			String tmp;
+			Long num, quote = null;
+
+			while (sc.hasNext()) {
+    			tmp = sc.next();
+				num = sc.nextLong();
+				if (tmp.equals(symbol)) {
+					quote=num;
+				}
+			}
+			sc.close();
+			return quote;
+		} 
+		catch (FileNotFoundException e) {
+				e.printStackTrace();
+		}
+		return null;
 	}
 }
