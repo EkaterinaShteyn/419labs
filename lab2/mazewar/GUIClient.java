@@ -46,6 +46,8 @@ public class GUIClient extends LocalClient implements KeyListener {
                         Mazewar.quit();
                 // Up-arrow moves forward.
                 } else if(e.getKeyCode() == KeyEvent.VK_UP) {
+                	
+                	
                         forward();
                 // Down-arrow moves backward.
                 } else if(e.getKeyCode() == KeyEvent.VK_DOWN) {
