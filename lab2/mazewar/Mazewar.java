@@ -145,9 +145,6 @@ public class Mazewar extends JFrame {
 			}
 			serverSocket = new Socket(hostname, port); // remember to close socket
 
-			//out = new ObjectOutputStream(serverSocket.getOutputStream());
-			//in = new ObjectInputStream(serverSocket.getInputStream());
-
 		} catch (UnknownHostException e) {
 			System.err.println("ERROR: Don't know where to connect!!");
 			System.exit(1);

@@ -33,12 +33,14 @@ public class GUIClient extends LocalClient implements KeyListener {
 	
 		private Socket socket = null;
 		ObjectOutputStream toServer;
+		String name = null;
 
         /**
          * Create a GUI controlled {@link LocalClient}.  
          */
         public GUIClient(String name, Socket socket) {
                 super(name);
+				this.name = name;
 				this.socket = socket;
 				//ObjectInputStream fromServer = new ObjectInputStream(socket.getInputStream());
 				try {
@@ -57,6 +59,7 @@ public class GUIClient extends LocalClient implements KeyListener {
         public void keyPressed(KeyEvent e) {
 
 				MazewarPkt packetToServer = new MazewarPkt();
+				packetToServer.player = name;
 
                 // If the user pressed Q, invoke the cleanup code and quit. 
                 if((e.getKeyChar() == 'q') || (e.getKeyChar() == 'Q')) {
