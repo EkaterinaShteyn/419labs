@@ -10,18 +10,18 @@ import java.io.Serializable;
 
 /* inline class to describe host/port combo */
 class ServerLocation implements Serializable {
-	public String  broker_host;
-	public Integer broker_port;
+	public String  server_host;
+	public Integer server_port;
 	
 	/* constructor */
-	public BrokerLocation(String host, Integer port) {
-		this.broker_host = host;
-		this.broker_port = port;
+	public ServerLocation(String host, Integer port) {
+		this.server_host = host;
+		this.server_port = port;
 	}
 	
 	/* printable output */
 	public String toString() {
-		return " HOST: " + broker_host + " PORT: " + broker_port; 
+		return " HOST: " + server_host + " PORT: " + server_port; 
 	}
 	
 }
@@ -29,7 +29,13 @@ class ServerLocation implements Serializable {
 public class MazewarPkt implements Serializable {
 
 	public static final int UP = 1;
+	public static final int DOWN = 2;
+	public static final int LEFT = 3;
+	public static final int RIGHT = 4;
+	public static final int FIRE = 5;
+	public static final int QUIT = 6;
+	
 	int event;
-	int player;
+	String player;
 	
 }
