@@ -9,6 +9,7 @@ import java.io.Serializable;
  */
 
 
+
 public class MazewarPkt implements Serializable {
 
 	public static final int UP = 1;
@@ -19,7 +20,7 @@ public class MazewarPkt implements Serializable {
 	public static final int QUIT = 6;
 	public static final int CONNECT = 7;
 	public static final int DISCONNECT = 8;
-	
+
 	
 	int event;
 	String player;
