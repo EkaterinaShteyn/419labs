@@ -41,7 +41,7 @@ public class Mazewar extends JFrame {
 
 	
 		/**
-		 * Array of remote clients.
+		 * An array of remote Clients.
 		 */
 		RemoteClient[] remotePlayers = new RemoteClient[21]; // Make this dynamic
 		
@@ -265,7 +265,7 @@ public class Mazewar extends JFrame {
 					System.out.println("Adding " + packetFromServer.clients.get(i) + " to game.");
 					if (name.equals(packetFromServer.clients.get(i))){
 						// Create the GUIClient and connect it to the KeyListener queue
-						guiClient = new GUIClient(name,serverSocket);
+						guiClient = new GUIClient(name,out);
 						maze.addClient(guiClient);	
 						this.addKeyListener(guiClient);
 					} else {

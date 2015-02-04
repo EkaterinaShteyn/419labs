@@ -38,16 +38,11 @@ public class GUIClient extends LocalClient implements KeyListener {
         /**
          * Create a GUI controlled {@link LocalClient}.  
          */
-        public GUIClient(String name, Socket socket) {
+        public GUIClient(String name, ObjectOutputStream toServer) {
                 super(name);
 				this.name = name;
-				this.socket = socket;
+				this.toServer = toServer;
 				//ObjectInputStream fromServer = new ObjectInputStream(socket.getInputStream());
-				try {
-					toServer = new ObjectOutputStream(socket.getOutputStream());
-				} catch (IOException e) {
-					System.exit(1);
-				}
         }
 
 		
@@ -57,6 +52,7 @@ public class GUIClient extends LocalClient implements KeyListener {
          * @param e The {@link KeyEvent} that occurred.
          */
         public void keyPressed(KeyEvent e) {
+        		System.out.println("Key event");
 
 				MazewarPkt packetToServer = new MazewarPkt();
 				packetToServer.player = name;
