@@ -26,9 +26,9 @@ import javax.swing.JOptionPane;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import javax.swing.BorderFactory;
-import java.io.Serializable;
 import java.io.*;
 import java.net.*;
+import java.util.*;
 
 /**
  * The entry point and glue code for the game.  It also contains some helpful
@@ -54,7 +54,7 @@ public class Mazewar extends JFrame {
          * All implementations of the same protocol must use 
          * the same seed value, or your mazes will be different.
          */
-        private final int mazeSeed = 42;
+        private int mazeSeed = 42;
 
         /**
          * The {@link Maze} that the game uses.
@@ -125,12 +125,13 @@ public class Mazewar extends JFrame {
                 super("ECE419 Mazewar");
                 consolePrintLn("ECE419 Mazewar started!");
 
-		// Connect to server
-		
+		// Connect to server  
 		Socket serverSocket = null;
 		ObjectOutputStream out = null;
-		ObjectInputStream in = null;		
-               
+		ObjectInputStream in = null;
+		MazewarPkt packetFromServer = new MazewarPkt();
+		MazewarPkt packetToServer = new MazewarPkt();
+		    
 		try {
 			/* variables for hostname/port */
 			String hostname = "localhost";
@@ -144,6 +145,8 @@ public class Mazewar extends JFrame {
 				System.exit(-1);
 			}
 			serverSocket = new Socket(hostname, port); // remember to close socket
+			out = new ObjectOutputStream(serverSocket.getOutputStream());
+			in = new ObjectInputStream(serverSocket.getInputStream());
 
 		} catch (UnknownHostException e) {
 			System.err.println("ERROR: Don't know where to connect!!");
@@ -151,8 +154,7 @@ public class Mazewar extends JFrame {
 		} catch (IOException e) {
 			System.err.println("ERROR: Couldn't get I/O for the connection.");
 			System.exit(1);
-		}
-	
+		}  
                 // Create the maze
                 maze = new MazeImpl(new Point(mazeWidth, mazeHeight), mazeSeed);
                 assert(maze != null);
@@ -163,6 +165,8 @@ public class Mazewar extends JFrame {
                 assert(scoreModel != null);
                 maze.addMazeListener(scoreModel);
                 
+                
+                
                 // Throw up a dialog to get the GUIClient name.
                 String name = JOptionPane.showInputDialog("Enter your name");
                 if((name == null) || (name.length() == 0)) {
@@ -171,20 +175,46 @@ public class Mazewar extends JFrame {
                 
                 // You may want to put your network initialization code somewhere in
                 // here.
+		        try {
+		        	packetToServer.player=name;
+		        	packetToServer.event=MazewarPkt.CONNECT;
+		        	
+		        	out.writeObject(packetToServer);
+		        	
+					packetFromServer = (MazewarPkt) in.readObject();
+		
+					if (packetFromServer.event != MazewarPkt.CONNECT) {
+						// error
+					}
+					// set mazeseed
+					// get client array
+		
+					mazeSeed = packetFromServer.seed;
+				 } catch (ClassNotFoundException c) {
+					// error
+				 } catch (IOException f) {
+					// error
+				 }      
+                System.out.println("Got client list: +"+packetFromServer.clients.toString());
+		        RemoteClient[] remotePlayers = new RemoteClient[21]; // Make this dynamic
+		        int numRemotePlayers=0;
                 
+				// Add clients
+				for (int i = 0; i <= packetFromServer.clients.size()-1; i++) {
+					System.out.println("Adding " + packetFromServer.clients.get(i) + " to game.");
+					if (name.equals(packetFromServer.clients.get(i))){
+						// Create the GUIClient and connect it to the KeyListener queue
+						guiClient = new GUIClient(name,serverSocket);
+						maze.addClient(guiClient);	
+						this.addKeyListener(guiClient);
+					} else {
+						remotePlayers[numRemotePlayers] = new RemoteClient(packetFromServer.clients.get(i).toString());
+						maze.addClient(remotePlayers[numRemotePlayers]);
+						numRemotePlayers++;
+					}
+				}
+
                 // Create the GUIClient and connect it to the KeyListener queue
-                guiClient = new GUIClient(name,serverSocket);
-                maze.addClient(guiClient);
-                this.addKeyListener(guiClient);
-                
-                // Use braces to force constructors not to be called at the beginning of the
-                // constructor.
-                /*{
-                        maze.addClient(new RobotClient("Norby"));
-                        maze.addClient(new RobotClient("Robbie"));
-                        maze.addClient(new RobotClient("Clango"));
-                        maze.addClient(new RobotClient("Marvin"));
-                }*/
 
                 
                 // Create the panel that will display the maze.
@@ -244,6 +274,38 @@ public class Mazewar extends JFrame {
                 setVisible(true);
                 overheadPanel.repaint();
                 this.requestFocusInWindow();
+				
+				// Listen for commands from server
+                
+                try {
+					while ((packetFromServer = (MazewarPkt) in.readObject()) != null) {
+						if ( packetFromServer.event == MazewarPkt.CONNECT) {
+							// add new player
+							numRemotePlayers++;
+							remotePlayers[numRemotePlayers] = new RemoteClient(packetFromServer.player);
+							maze.addClient(remotePlayers[numRemotePlayers]);
+						} else {
+							// get client
+								if (name.equals(packetFromServer.player)){
+									// move guiClient
+									guiClient.fire();
+							} else {
+								for (int i = 0; i <= numRemotePlayers; i++)
+									// find and move remoteClient
+									if (remotePlayers[i].getName().equals(packetFromServer.player)) {
+										remotePlayers[i].fire();
+									}
+							}
+						}
+					}
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ClassNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
         }
 
         
