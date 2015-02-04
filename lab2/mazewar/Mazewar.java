@@ -39,7 +39,15 @@ import java.util.*;
 
 public class Mazewar extends JFrame {
 
+	
+		/**
+		 * Array of remote clients.
+		 */
 		RemoteClient[] remotePlayers = new RemoteClient[21]; // Make this dynamic
+		
+		/**
+		 * Number of remotely connected players.
+		 */
 		int numRemotePlayers=0;
 		
 		/**
@@ -156,6 +164,20 @@ public class Mazewar extends JFrame {
 				}
 			}
         	return null;
+        }
+        
+        /**
+         * Return true if event is a player action.
+         * @param event
+         * @return
+         */
+        public boolean isAction(int event) {
+        	if ((event <= 5)&&(event > 0)) {
+        		return true;
+        	}
+        	else {
+        		return false;
+        	}	
         }
        
         /** 
@@ -320,18 +342,19 @@ public class Mazewar extends JFrame {
 							remotePlayers[numRemotePlayers] = new RemoteClient(packetFromServer.player);
 							maze.addClient(remotePlayers[numRemotePlayers]);
 							numRemotePlayers++;
-						} else if ((packetFromServer.event <= 5)&&(packetFromServer.event > 0)) {
+						} else if (isAction(packetFromServer.event)) {
 							// move players
 							if (name.equals(packetFromServer.player)){
 									// move guiClient
 									move(guiClient,packetFromServer.event);
 							} else {
-								for (int i = 0; i <= numRemotePlayers-1; i++){
 									// find and move remoteClient
 									move(getRemoteClient(packetFromServer.player),packetFromServer.event);
-								}
 							}
+						} else {
+							// Do nothing for now
 						}
+						
 					}
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
