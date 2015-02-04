@@ -39,7 +39,10 @@ import java.util.*;
 
 public class Mazewar extends JFrame {
 
-        /**
+		RemoteClient[] remotePlayers = new RemoteClient[21]; // Make this dynamic
+		int numRemotePlayers=0;
+		
+		/**
          * The default width of the {@link Maze}.
          */
         private final int mazeWidth = 20;
@@ -117,6 +120,43 @@ public class Mazewar extends JFrame {
 
                 System.exit(0);
         }
+        
+        /**
+         * Process a player action.
+         * @param player The player.
+         * @param event The action to be performed.
+         */  
+        public static void move(Client player, int event) {
+        	switch (event) {
+	        	case MazewarPkt.UP:
+	        		player.forward();
+	        	case MazewarPkt.DOWN:
+	        		player.backup();
+	        	case MazewarPkt.LEFT:
+	        		player.turnLeft();
+	        	case MazewarPkt.RIGHT:
+	        		player.turnRight();
+	        	case MazewarPkt.FIRE:
+	        		player.fire();
+	        	default:
+	        		//Error
+        	}
+        }
+        
+        /**
+         * Find and return remote player by name.
+         * @param name of player.
+         * @return returns RemoteClient object.
+         */
+        public RemoteClient getRemoteClient(String name) {
+        	for (int i = 0; i <= numRemotePlayers-1; i++){
+				// find and move remoteClient
+				if (remotePlayers[i].getName().equals(name)) {
+					return remotePlayers[i];
+				}
+			}
+        	return null;
+        }
        
         /** 
          * The place where all the pieces are put together. 
@@ -155,10 +195,7 @@ public class Mazewar extends JFrame {
 			System.err.println("ERROR: Couldn't get I/O for the connection.");
 			System.exit(1);
 		}  
-              
-                
-                
-                
+                                    
                 // Throw up a dialog to get the GUIClient name.
                 String name = JOptionPane.showInputDialog("Enter your name");
                 if((name == null) || (name.length() == 0)) {
@@ -199,8 +236,7 @@ public class Mazewar extends JFrame {
                 maze.addMazeListener(scoreModel);
 		  
                 System.out.println("Got client list: +"+packetFromServer.clients.toString());
-		        RemoteClient[] remotePlayers = new RemoteClient[21]; // Make this dynamic
-		        int numRemotePlayers=0;
+		        
                 
 				// Add clients
 				for (int i = 0; i <= packetFromServer.clients.size()-1; i++) {
@@ -217,9 +253,6 @@ public class Mazewar extends JFrame {
 					}
 				}
 
-                // Create the GUIClient and connect it to the KeyListener queue
-
-                
                 // Create the panel that will display the maze.
                 overheadPanel = new OverheadMazePanel(maze, guiClient);
                 assert(overheadPanel != null);
@@ -287,18 +320,15 @@ public class Mazewar extends JFrame {
 							remotePlayers[numRemotePlayers] = new RemoteClient(packetFromServer.player);
 							maze.addClient(remotePlayers[numRemotePlayers]);
 							numRemotePlayers++;
-						} else {
-							// get client
-								if (name.equals(packetFromServer.player)){
+						} else if ((packetFromServer.event <= 5)&&(packetFromServer.event > 0)) {
+							// move players
+							if (name.equals(packetFromServer.player)){
 									// move guiClient
-									guiClient.fire();
+									move(guiClient,packetFromServer.event);
 							} else {
 								for (int i = 0; i <= numRemotePlayers-1; i++){
-									System.out.println(remotePlayers[i].getName());
 									// find and move remoteClient
-									if (remotePlayers[i].getName().equals(packetFromServer.player)) {
-										remotePlayers[i].fire();
-									}
+									move(getRemoteClient(packetFromServer.player),packetFromServer.event);
 								}
 							}
 						}
